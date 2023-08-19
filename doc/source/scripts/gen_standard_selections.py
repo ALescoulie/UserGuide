@@ -8,36 +8,51 @@ Writes standard selection names for:
     - nucleobase atoms
     - nucleic sugar atoms
 """
+from typing import Type
+
 from base import TableWriter
 from MDAnalysis.core import selection as sel
 
 
-def chunk_list(lst, n=8):
-    return [lst[i : i + n] for i in range(0, len(lst), n)]
+def _chunk_list(lst: list, chunk_size: int = 8) -> list:
+    return [lst[i : i + chunk_size] for i in range(0, len(lst), chunk_size)]
 
 
-class StandardSelectionTable(TableWriter):
-    sort = False
-    filename = "generated/selections/{}.txt"
+# override get_lines as there are no headings
+def _generate_lines(
+    *, klass: Type, attr: str, sort: bool = False, chunk_size: int = 8
+) -> list[str]:
+    selected = getattr(klass, attr)
+    if sort:
+        selected = sorted(selected)
 
+    table = _chunk_list(list(selected), chunk_size=chunk_size)
+    return table
+
+
+class StandardSelectionTable:
     def __init__(self, filename, *args, **kwargs):
-        self.filename = self.filename.format(filename)
-        super(StandardSelectionTable, self).__init__(*args, **kwargs)
 
-    # override get_lines as there are no headings
-    def get_lines(self, klass, attr, sort=False, n=8):
-        selected = getattr(klass, attr)
-        if sort:
-            selected = sorted(selected)
-
-        table = chunk_list(list(selected), n=n)
-        self.lines = table
+        self.table_writer = TableWriter(
+            sort=False,
+            filename="generated/selections/{}.txt".format(filename),
+            generate_lines=_generate_lines,
+        )
+        self.table_writer.get_lines_and_write_table(*args, **kwargs)
 
 
 if __name__ == "__main__":
-    StandardSelectionTable("protein", sel.ProteinSelection, "prot_res", True)
-    StandardSelectionTable("protein_backbone", sel.BackboneSelection, "bb_atoms")
-    StandardSelectionTable("nucleic", sel.NucleicSelection, "nucl_res")
-    StandardSelectionTable("nucleic_backbone", sel.NucleicBackboneSelection, "bb_atoms")
-    StandardSelectionTable("base", sel.BaseSelection, "base_atoms")
-    StandardSelectionTable("nucleic_sugar", sel.NucleicSugarSelection, "sug_atoms")
+    StandardSelectionTable(
+        "protein", klass=sel.ProteinSelection, attr="prot_res", sort=True
+    )
+    StandardSelectionTable(
+        "protein_backbone", klass=sel.BackboneSelection, attr="bb_atoms"
+    )
+    StandardSelectionTable("nucleic", klass=sel.NucleicSelection, attr="nucl_res")
+    StandardSelectionTable(
+        "nucleic_backbone", klass=sel.NucleicBackboneSelection, attr="bb_atoms"
+    )
+    StandardSelectionTable("base", klass=sel.BaseSelection, attr="base_atoms")
+    StandardSelectionTable(
+        "nucleic_sugar", klass=sel.NucleicSugarSelection, attr="sug_atoms"
+    )

@@ -7,4 +7,4 @@ from MDAnalysis.core import selection as sel
 def test_SelectionExporterWriter(snapshot):
     with patch("builtins.open"):
         se = SelectionExporterWriter()
-    assert se.lines == snapshot
+    assert se.table_writer.lines == snapshot

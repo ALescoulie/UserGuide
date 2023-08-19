@@ -5,6 +5,7 @@ import pathlib
 import sys
 import textwrap
 from collections import defaultdict
+from typing import Callable, Optional, Type
 
 import tabulate
 
@@ -28,19 +29,41 @@ class TableWriter(object):
     def __getattr__(self, key: str) -> list:
         return self.fields[key]
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        headings: list[str] = [],
+        filename: str = "",
+        include_table: bool = False,
+        sort: bool = True,
+        input_items: set = {},
+        columns: dict = {},
+        generate_lines: Optional[Callable] = None,
+    ):
         stem = os.getcwd().split("source")[0]
         self.path = os.path.join(stem, "source", self.filename)
         self.fields = defaultdict(list)
+        self.headings = headings
+        self.filename = filename
+        self.include_table = include_table
+        self.sort = sort
+        self.input_items = input_items
+        self.columns = columns
+        self.generate_lines = generate_lines
 
+    def get_lines_and_write_table(self, *args, **kwargs):
         parent_directory = pathlib.Path(self.path).parent
         parent_directory.mkdir(exist_ok=True, parents=True)
-        self.get_lines(*args, **kwargs)
+        if self.generate_lines:
+            self.lines = self.generate_lines(*args, **kwargs)
+        else:
+            self.get_lines(*args, **kwargs)
         self.write_table()
 
     def _run_method(self, method, *args, **kwargs):
         sanitized = self.sanitize_name(method)
-        meth = getattr(self, sanitized)
+        meth = (
+            self.columns[method] if method in self.columns else getattr(self, sanitized)
+        )
         val = meth(*args, **kwargs)
         self.fields[method].append(val)
         return val
@@ -51,7 +74,7 @@ class TableWriter(object):
 
     def get_lines(self, *args, **kwargs):
         lines = []
-        for items in self._set_up_input():
+        for items in self.input_items or self._set_up_input():
             try:
                 lines.append(self.get_line(*items))
             except TypeError:  # one argument
@@ -87,18 +110,34 @@ class TableWriter(object):
 
     @staticmethod
     def sphinx_class(klass, tilde=True):
-        prefix = "~" if tilde else ""
-        return ":class:`{}{}.{}`".format(prefix, klass.__module__, klass.__name__)
+        return sphinx_class(klass=klass, tilde=tilde)
 
     @staticmethod
     def sphinx_meth(meth, tilde=True):
-        prefix = "~" if tilde else ""
-        return ":meth:`{}{}.{}`".format(prefix, meth.__module__, meth.__qualname__)
+        return sphinx_method(method=meth, tilde=tilde)
 
     @staticmethod
     def sphinx_ref(txt: str, label: str = None, suffix: str = "") -> str:
-        return f":ref:`{txt} <{label}{suffix}>`"
+        return sphinx_ref(txt=txt, label=label, suffix=suffix)
 
     @staticmethod
     def sphinx_link(txt):
-        return "`{}`_".format(txt)
+        return sphinx_link(txt=txt)
+
+
+def sphinx_class(*, klass: Type, tilde: bool = True) -> str:
+    prefix = "~" if tilde else ""
+    return ":class:`{}{}.{}`".format(prefix, klass.__module__, klass.__name__)
+
+
+def sphinx_method(*, meth: Callable, tilde: bool = True) -> str:
+    prefix = "~" if tilde else ""
+    return ":meth:`{}{}.{}`".format(prefix, meth.__module__, meth.__qualname__)
+
+
+def sphinx_ref(*, txt: str, label: str = None, suffix: str = "") -> str:
+    return f":ref:`{txt} <{label}{suffix}>`"
+
+
+def sphinx_link(*, txt: str) -> str:
+    return "`{}`_".format(txt)
