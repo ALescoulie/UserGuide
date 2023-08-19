@@ -10,6 +10,10 @@ from typing import Callable, Optional, Type
 import tabulate
 
 
+def _sanitize_method_name(name: str) -> str:
+    return "_" + name.replace(" ", "_").replace("/", "_").lower()
+
+
 class TableWriter(object):
     """
     For writing tables with easy column switching.
@@ -60,17 +64,13 @@ class TableWriter(object):
         self.write_table()
 
     def _run_method(self, method, *args, **kwargs):
-        sanitized = self.sanitize_name(method)
+        sanitized = _sanitize_method_name(method)
         meth = (
             self.columns[method] if method in self.columns else getattr(self, sanitized)
         )
         val = meth(*args, **kwargs)
         self.fields[method].append(val)
         return val
-
-    @staticmethod
-    def sanitize_name(name):
-        return "_" + name.replace(" ", "_").replace("/", "_").lower()
 
     def get_lines(self, *args, **kwargs):
         lines = []

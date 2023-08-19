@@ -16,42 +16,56 @@ DEFAULTS = {
 }
 
 
-class TopologyDefaults(TableWriter):
-    filename = "generated/topology/defaults.txt"
-    headings = ("Atom", "AtomGroup", "default", "level", "type")
-    sort = True
+def _atom(klass):
+    return klass.attrname
 
-    def _set_up_input(self):
-        return TOPOLOGY_CLS
 
-    def _atom(self, klass):
-        return klass.attrname
+def _atomgroup(klass):
+    return klass.singular
 
-    def _atomgroup(self, klass):
-        return klass.singular
 
-    def _default(self, klass):
+def _default(klass):
+    try:
+        return DEFAULTS[klass.attrname]
+    except KeyError:
         try:
-            return DEFAULTS[klass.attrname]
-        except KeyError:
-            try:
-                return repr(klass._gen_initial_values(1, 1, 1)[0])
-            except NotImplementedError:
-                return "No default values"
+            return repr(klass._gen_initial_values(1, 1, 1)[0])
+        except NotImplementedError:
+            return "No default values"
 
-    def _level(self, klass):
-        if issubclass(klass, AtomAttr):
-            level = "atom"
-        elif issubclass(klass, ResidueAttr):
-            level = "residue"
-        elif issubclass(klass, SegmentAttr):
-            level = "segment"
-        else:
-            raise ValueError
-        return level
 
-    def _type(self, klass):
-        return klass.dtype
+def _level(klass):
+    if issubclass(klass, AtomAttr):
+        level = "atom"
+    elif issubclass(klass, ResidueAttr):
+        level = "residue"
+    elif issubclass(klass, SegmentAttr):
+        level = "segment"
+    else:
+        raise ValueError
+    return level
+
+
+def _type(klass):
+    return klass.dtype
+
+
+class TopologyDefaults:
+    def __init__(self) -> None:
+        self.table_writer = TableWriter(
+            filename="generated/topology/defaults.txt",
+            headings=("Atom", "AtomGroup", "default", "level", "type"),
+            sort=True,
+            input_items=TOPOLOGY_CLS,
+            columns={
+                "Atom": _atom,
+                "AtomGroup": _atomgroup,
+                "default": _default,
+                "level": _level,
+                "type": _type,
+            },
+        )
+        self.table_writer.get_lines_and_write_table()
 
 
 if __name__ == "__main__":
