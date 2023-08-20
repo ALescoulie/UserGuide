@@ -15,7 +15,7 @@ def test_FILE_TYPES():
 def test_FormatOverview(snapshot):
     with patch("builtins.open"):
         ov = FormatOverview()
-    assert ov.lines == snapshot
+    assert ov.table_writer.lines == snapshot
 
 
 def test_CoordinateReaders(snapshot):

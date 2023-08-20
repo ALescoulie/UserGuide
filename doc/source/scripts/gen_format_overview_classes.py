@@ -8,6 +8,7 @@ Generates:
 
 from collections import defaultdict
 
+import base
 from base import TableWriter
 from core import DESCRIPTIONS
 from MDAnalysis import _CONVERTERS, _PARSERS, _READERS, _SINGLEFRAME_WRITERS
@@ -31,51 +32,72 @@ SUCCESS = "\u2713"  # checkmark
 FAIL = ""
 
 
-class FormatOverview(TableWriter):
-    filename = "formats/format_overview.txt"
-    include_table = "Table of all supported formats in MDAnalysis"
-    preprocess = ["keys"]
-    headings = ["File type", "Description", "Topology", "Coordinates", "Read", "Write"]
+class FormatOverview:
+    def __init__(self) -> None:
+        def _file_type(fmt, handlers, key):
+            return base.sphinx_ref(txt=fmt, label=key, suffix="-format")
 
-    def _set_up_input(self):
-        return sorted_types
-
-    def _file_type(self, fmt, handlers):
-        return self.sphinx_ref(fmt, self.keys[-1], suffix="-format")
-
-    def _keys(self, fmt, handlers):
-        if fmt in DESCRIPTIONS:
-            key = fmt
-        else:
-            key = list(handlers.values())[0].format[0]
-
-            # raise an informative error
-            if key not in DESCRIPTIONS:
+        def _keys(fmt, handlers):
+            if fmt in DESCRIPTIONS:
                 key = fmt
-        return key
+            else:
+                key = list(handlers.values())[0].format[0]
 
-    def _description(self, fmt, handlers):
-        return DESCRIPTIONS[self.keys[-1]]
+                # raise an informative error
+                if key not in DESCRIPTIONS:
+                    key = fmt
+            return key
 
-    def _topology(self, fmt, handlers):
-        if "Topology parser" in handlers:
+        def _description(fmt, handlers, key):
+            return DESCRIPTIONS[key]
+
+        def _topology(fmt, handlers, key):
+            if "Topology parser" in handlers:
+                return SUCCESS
+            return FAIL
+
+        def _coordinates(fmt, handlers, key):
+            if "Coordinate reader" in handlers:
+                return SUCCESS
+            return FAIL
+
+        def _read(fmt, handlers, key):
             return SUCCESS
-        return FAIL
 
-    def _coordinates(self, fmt, handlers):
-        if "Coordinate reader" in handlers:
-            return SUCCESS
-        return FAIL
+        def _write(fmt, handlers, key):
+            if "Coordinate writer" in handlers:
+                return SUCCESS
+            if "Converter" in handlers:
+                return SUCCESS
+            return FAIL
 
-    def _read(self, fmt, handlers):
-        return SUCCESS
+        input_items = [
+            (format, handlers, _keys(format, handlers))
+            for format, handlers in sorted_types
+        ]
 
-    def _write(self, fmt, handlers):
-        if "Coordinate writer" in handlers:
-            return SUCCESS
-        if "Converter" in handlers:
-            return SUCCESS
-        return FAIL
+        self.table_writer = TableWriter(
+            filename="formats/format_overview.txt",
+            include_table="Table of all supported formats in MDAnalysis",
+            headings=[
+                "File type",
+                "Description",
+                "Topology",
+                "Coordinates",
+                "Read",
+                "Write",
+            ],
+            input_items=input_items,
+            columns={
+                "File type": _file_type,
+                "Description": _description,
+                "Topology": _topology,
+                "Coordinates": _coordinates,
+                "Read": _read,
+                "Write": _write,
+            },
+        )
+        self.table_writer.get_lines_and_write_table()
 
 
 class CoordinateReaders(FormatOverview):

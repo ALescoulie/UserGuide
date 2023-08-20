@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import collections
 import os
 import pathlib
 import sys
@@ -75,10 +76,12 @@ class TableWriter(object):
     def get_lines(self, *args, **kwargs):
         lines = []
         for items in self.input_items or self._set_up_input():
-            try:
-                lines.append(self.get_line(*items))
-            except TypeError:  # one argument
-                lines.append(self.get_line(items))
+            line = (
+                self.get_line(*items)
+                if isinstance(items, collections.Iterable)
+                else self.get_line(items)
+            )
+            lines.append(line)
         if self.sort:
             lines = sorted(lines)
         self.lines = lines
@@ -88,6 +91,7 @@ class TableWriter(object):
         for p in self.preprocess:
             self._run_method(p, *args)
         for h in self.headings:
+            print("headings", (h, args))
             line.append(self._run_method(h, *args))
         for p in self.postprocess:
             self._run_method(p, *args)
