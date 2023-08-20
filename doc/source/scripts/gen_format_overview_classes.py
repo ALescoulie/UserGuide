@@ -101,6 +101,7 @@ class FormatOverview:
             },
         )
         self.table_writer.get_lines_and_write_table()
+        self.table_writer.fields["keys"] = list(zip(*input_items))[2]
 
 
 class CoordinateReaders:
@@ -135,25 +136,28 @@ class CoordinateReaders:
         self.table_writer.get_lines_and_write_table()
 
 
-class SphinxClasses(TableWriter):
-    filename = "formats/reference/classes/{}.txt"
-
+class SphinxClasses:
     def __init__(self, fmt):
-        self.filename = self.filename.format(fmt)
-        self.fmt = fmt
-        super(SphinxClasses, self).__init__()
+        def _generate_lines():
+            lines = []
+            for label, klass in sorted(FILE_TYPES[fmt].items()):
+                lines.append(
+                    [
+                        "**{}**".format(label),
+                        base.sphinx_class(klass=klass, tilde=False),
+                    ]
+                )
+            return lines
 
-    def get_lines(self):
-        lines = []
-        for label, klass in sorted(FILE_TYPES[self.fmt].items()):
-            lines.append(
-                ["**{}**".format(label), self.sphinx_class(klass, tilde=False)]
-            )
-        self.lines = lines
+        self.table_writer = TableWriter(
+            filename="formats/reference/classes/{}.txt".format(fmt),
+            generate_lines=_generate_lines,
+        )
+        self.table_writer.get_lines_and_write_table()
 
 
 if __name__ == "__main__":
     ov = FormatOverview()
     CoordinateReaders()
-    for key in set(ov.fields["keys"]):
+    for key in set(ov.table_writer.fields["keys"]):
         SphinxClasses(key)

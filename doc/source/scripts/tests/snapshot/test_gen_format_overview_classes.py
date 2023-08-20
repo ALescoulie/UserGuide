@@ -27,4 +27,4 @@ def test_CoordinateReaders(snapshot):
 def test_SphinxClasses(snapshot):
     with patch("builtins.open"):
         sc = SphinxClasses("PDB")
-    assert sc.lines == snapshot
+    assert sc.table_writer.lines == snapshot
