@@ -7,13 +7,14 @@ Generates:
 """
 
 from collections import defaultdict
+from typing import Type
 
 import base
 from base import TableWriter
 from core import DESCRIPTIONS
 from MDAnalysis import _CONVERTERS, _PARSERS, _READERS, _SINGLEFRAME_WRITERS
 
-FILE_TYPES = defaultdict(dict)
+FILE_TYPES: dict[str, dict[str, Type]] = defaultdict(dict)
 
 for clstype, dct in (
     ("Coordinate reader", _READERS),

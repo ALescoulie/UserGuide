@@ -7,7 +7,7 @@ from MDAnalysis.core import selection as sel
 def test_TopologyParsers_lines(snapshot):
     with patch("builtins.open"):
         top = TopologyParsers()
-    assert top.lines == snapshot
+    assert top.table_writer.lines == snapshot
 
 
 def test_TopologyParsers_attrs(snapshot):

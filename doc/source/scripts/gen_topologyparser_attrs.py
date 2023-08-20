@@ -11,6 +11,7 @@ import os
 import sys
 from collections import defaultdict
 
+import base
 from base import TableWriter
 from core import DESCRIPTIONS, NON_CORE_ATTRS
 from MDAnalysisTests.topology.base import mandatory_attrs
@@ -66,61 +67,79 @@ PARSER_TESTS = (
 
 MANDATORY_ATTRS = set(mandatory_attrs)
 
-
 parser_attrs = {}
 
 
 for p in PARSER_TESTS:
-    e, g = set(p.expected_attrs) - MANDATORY_ATTRS, set(p.guessed_attrs)
+    expected, guessed = set(p.expected_attrs) - MANDATORY_ATTRS, set(p.guessed_attrs)
     # clunky hack for PDB
     if p is TestPDBParser:
-        e.add("elements")
-    parser_attrs[p.parser] = (e, g)
+        expected.add("elements")
+    parser_attrs[p.parser] = (expected, guessed)
 
 
-class TopologyParsers(TableWriter):
-    headings = ["Format", "Description", "Attributes read", "Attributes guessed"]
-    preprocess = ["keys"]
-    filename = "formats/topology_parsers.txt"
-    include_table = "Table of supported topology parsers and the attributes read"
-    sort = True
-
+class TopologyParsers:
     def __init__(self):
-        self.attrs = defaultdict(set)
-        super(TopologyParsers, self).__init__()
+        def _keys(parser, *args) -> tuple[str, str]:
+            f = parser.format
+            if isinstance(f, (list, tuple)):
+                key = f[0]
+                label = ", ".join(f)
+            else:
+                key = label = f
+            return (key, label)
 
-    def _set_up_input(self):
-        return [[x, *y] for x, y in parser_attrs.items()]
+        def _description(parser, expected, guessed, key_label):
+            key, label = key_label
+            return DESCRIPTIONS[key]
 
-    def get_line(self, parser, expected, guessed):
-        line = super(TopologyParsers, self).get_line(parser, expected, guessed)
-        for a in expected | guessed:
-            self.attrs[a].add(self.fields["Format"][-1])
-        return line
+        def _format(parser, expected, guessed, key_label):
+            key, label = key_label
+            return base.sphinx_ref(txt=label, label=key, suffix="-format")
 
-    def _keys(self, parser, *args):
-        f = parser.format
-        if isinstance(f, (list, tuple)):
-            key = f[0]
-            label = ", ".join(f)
-        else:
-            key = label = f
-        return (key, label)
+        def _attributes_read(parser, expected, guessed, key_label):
+            vals = sorted(expected - guessed)
+            return ", ".join(vals)
 
-    def _description(self, *args):
-        key, label = self.keys[-1]
-        return DESCRIPTIONS[key]
+        def _attributes_guessed(parser, expected, guessed, key_label):
+            return ", ".join(sorted(guessed))
 
-    def _format(self, *args):
-        key, label = self.keys[-1]
-        return self.sphinx_ref(label, key, suffix="-format")
+        input_items = [
+            [parser, *attributes, _keys(parser=parser)]
+            for parser, attributes in parser_attrs.items()
+        ]
+        self.table_writer = TableWriter(
+            headings=["Format", "Description", "Attributes read", "Attributes guessed"],
+            filename="formats/topology_parsers.txt",
+            include_table="Table of supported topology parsers and the attributes read",
+            sort=True,
+            input_items=input_items,
+            columns={
+                "Format": _format,
+                "Description": _description,
+                "Attributes read": _attributes_read,
+                "Attributes guessed": _attributes_guessed,
+            },
+        )
+        self.table_writer.get_lines_and_write_table()
 
-    def _attributes_read(self, parser, expected, guessed):
-        vals = sorted(expected - guessed)
-        return ", ".join(vals)
+        # raise ValueError(len(self.table_writer.lines), len(input_items), len(self.table_writer.fields["Format"]))
 
-    def _attributes_guessed(self, parser, expected, guessed):
-        return ", ".join(sorted(guessed))
+        attrs = defaultdict(set)
+
+        def _get_attrs(line, format, parser, expected, guessed, key_label):
+            for attribute in expected | guessed:
+                attrs[attribute].add(format)
+
+        [
+            _get_attrs(line, format, *args)
+            for line, format, args in zip(
+                self.table_writer.lines,
+                self.table_writer.fields["Format"],
+                input_items,
+            )
+        ]
+        self.attrs = attrs
 
 
 class TopologyAttrs(TableWriter):
