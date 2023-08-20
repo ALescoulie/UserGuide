@@ -31,9 +31,6 @@ class TableWriter(object):
     postprocess = []
     sort = True
 
-    def __getattr__(self, key: str) -> list:
-        return self.fields[key]
-
     def __init__(
         self,
         headings: list[str] = [],
@@ -88,12 +85,8 @@ class TableWriter(object):
 
     def get_line(self, *args):
         line = []
-        for p in self.preprocess:
-            self._run_method(p, *args)
         for h in self.headings:
             line.append(self._run_method(h, *args))
-        for p in self.postprocess:
-            self._run_method(p, *args)
         return line
 
     def write_table(self):
@@ -109,23 +102,8 @@ class TableWriter(object):
             f.write(tabled)
         print("Wrote ", self.filename)
 
-    # ==== HELPER FUNCTIONS ==== #
 
-    @staticmethod
-    def sphinx_class(klass, tilde=True):
-        return sphinx_class(klass=klass, tilde=tilde)
-
-    @staticmethod
-    def sphinx_meth(meth, tilde=True):
-        return sphinx_method(method=meth, tilde=tilde)
-
-    @staticmethod
-    def sphinx_ref(txt: str, label: str = None, suffix: str = "") -> str:
-        return sphinx_ref(txt=txt, label=label, suffix=suffix)
-
-    @staticmethod
-    def sphinx_link(txt):
-        return sphinx_link(txt=txt)
+# ==== HELPER FUNCTIONS ==== #
 
 
 def sphinx_class(*, klass: Type, tilde: bool = True) -> str:
