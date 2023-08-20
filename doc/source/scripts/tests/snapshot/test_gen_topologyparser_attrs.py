@@ -20,7 +20,7 @@ def test_TopologyAttrs(snapshot):
     with patch("builtins.open"):
         top = TopologyParsers()
         ta = TopologyAttrs(top.attrs)
-    assert ta.lines == snapshot
+    assert ta.table_writer.lines == snapshot
 
 
 def test_ConnectivityAttrs(snapshot):

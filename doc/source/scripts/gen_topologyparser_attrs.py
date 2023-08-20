@@ -142,30 +142,35 @@ class TopologyParsers:
         self.attrs = attrs
 
 
-class TopologyAttrs(TableWriter):
-    headings = ("Atom", "AtomGroup", "Description", "Supported formats")
-    filename = "generated/topology/topologyattrs.txt"
-
+class TopologyAttrs:
     def __init__(self, attrs):
-        self.attrs = attrs
-        super(TopologyAttrs, self).__init__()
+        def _atom(name, singular, *args):
+            return singular
 
-    def _set_up_input(self):
-        return sorted(
+        def _atomgroup(name, *args):
+            return name
+
+        def _description(name, singular, description):
+            return description
+
+        def _supported_formats(name, singular, description):
+            return ", ".join(sorted(attrs[name]))
+
+        input_items = sorted(
             [x, *y] for x, y in NON_CORE_ATTRS.items() if x not in MANDATORY_ATTRS
         )
-
-    def _atom(self, name, singular, *args):
-        return singular
-
-    def _atomgroup(self, name, *args):
-        return name
-
-    def _description(self, name, singular, description):
-        return description
-
-    def _supported_formats(self, name, singular, description):
-        return ", ".join(sorted(self.attrs[name]))
+        self.table_writer = TableWriter(
+            headings=("Atom", "AtomGroup", "Description", "Supported formats"),
+            filename="generated/topology/topologyattrs.txt",
+            input_items=input_items,
+            columns={
+                "Atom": _atom,
+                "AtomGroup": _atomgroup,
+                "Description": _description,
+                "Supported formats": _supported_formats,
+            },
+        )
+        self.table_writer.get_lines_and_write_table()
 
 
 class ConnectivityAttrs(TopologyAttrs):
