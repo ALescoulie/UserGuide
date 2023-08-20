@@ -173,13 +173,29 @@ class TopologyAttrs:
         self.table_writer.get_lines_and_write_table()
 
 
-class ConnectivityAttrs(TopologyAttrs):
-    headings = ("Atom", "AtomGroup", "Supported formats")
-    filename = "generated/topology/connectivityattrs.txt"
+class ConnectivityAttrs:
+    def __init__(self, attrs) -> None:
+        def _atom(name, singular, *args):
+            return singular
 
-    def _set_up_input(self):
-        inp = [[x] * 3 for x in "bonds angles dihedrals impropers".split()]
-        return inp
+        def _atomgroup(name, *args):
+            return name
+
+        def _supported_formats(name, singular, description):
+            return ", ".join(sorted(attrs[name]))
+
+        input_items = [[x] * 3 for x in ("bonds", "angles", "dihedrals", "impropers")]
+        self.table_writer = TableWriter(
+            headings=("Atom", "AtomGroup", "Supported formats"),
+            filename="generated/topology/connectivityattrs.txt",
+            input_items=input_items,
+            columns={
+                "Atom": _atom,
+                "AtomGroup": _atomgroup,
+                "Supported formats": _supported_formats,
+            },
+        )
+        self.table_writer.get_lines_and_write_table()
 
 
 if __name__ == "__main__":
