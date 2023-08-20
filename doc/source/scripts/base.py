@@ -91,7 +91,6 @@ class TableWriter(object):
         for p in self.preprocess:
             self._run_method(p, *args)
         for h in self.headings:
-            print("headings", (h, args))
             line.append(self._run_method(h, *args))
         for p in self.postprocess:
             self._run_method(p, *args)

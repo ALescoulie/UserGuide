@@ -21,7 +21,7 @@ def test_FormatOverview(snapshot):
 def test_CoordinateReaders(snapshot):
     with patch("builtins.open"):
         cr = CoordinateReaders()
-    assert cr.lines == snapshot
+    assert cr.table_writer.lines == snapshot
 
 
 def test_SphinxClasses(snapshot):

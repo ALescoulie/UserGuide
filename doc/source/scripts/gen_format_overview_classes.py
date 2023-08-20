@@ -32,25 +32,28 @@ SUCCESS = "\u2713"  # checkmark
 FAIL = ""
 
 
+def _keys(fmt, handlers):
+    if fmt in DESCRIPTIONS:
+        key = fmt
+    else:
+        key = list(handlers.values())[0].format[0]
+
+        # raise an informative error
+        if key not in DESCRIPTIONS:
+            key = fmt
+    return key
+
+
+def _file_type(fmt, handlers, key):
+    return base.sphinx_ref(txt=fmt, label=key, suffix="-format")
+
+
+def _description(fmt, handlers, key):
+    return DESCRIPTIONS[key]
+
+
 class FormatOverview:
     def __init__(self) -> None:
-        def _file_type(fmt, handlers, key):
-            return base.sphinx_ref(txt=fmt, label=key, suffix="-format")
-
-        def _keys(fmt, handlers):
-            if fmt in DESCRIPTIONS:
-                key = fmt
-            else:
-                key = list(handlers.values())[0].format[0]
-
-                # raise an informative error
-                if key not in DESCRIPTIONS:
-                    key = fmt
-            return key
-
-        def _description(fmt, handlers, key):
-            return DESCRIPTIONS[key]
-
         def _topology(fmt, handlers, key):
             if "Topology parser" in handlers:
                 return SUCCESS
@@ -100,23 +103,36 @@ class FormatOverview:
         self.table_writer.get_lines_and_write_table()
 
 
-class CoordinateReaders(FormatOverview):
-    filename = "formats/coordinate_readers.txt"
-    include_table = "Table of supported coordinate readers and the information read"
-    headings = ["File type", "Description", "Velocities", "Forces"]
+class CoordinateReaders:
+    def __init__(self) -> None:
+        def _velocities(fmt, handlers, key):
+            if handlers["Coordinate reader"].units.get("velocity", None):
+                return SUCCESS
+            return FAIL
 
-    def _set_up_input(self):
-        return [(x, y) for x, y in sorted_types if "Coordinate reader" in y]
+        def _forces(fmt, handlers, key):
+            if handlers["Coordinate reader"].units.get("force", None):
+                return SUCCESS
+            return FAIL
 
-    def _velocities(self, fmt, handlers):
-        if handlers["Coordinate reader"].units.get("velocity", None):
-            return SUCCESS
-        return FAIL
-
-    def _forces(self, fmt, handlers):
-        if handlers["Coordinate reader"].units.get("force", None):
-            return SUCCESS
-        return FAIL
+        input_items = [
+            (format, handlers, _keys(format, handlers))
+            for format, handlers in sorted_types
+            if "Coordinate reader" in handlers
+        ]
+        self.table_writer = TableWriter(
+            filename="formats/coordinate_readers.txt",
+            include_table="Table of supported coordinate readers and the information read",
+            headings=["File type", "Description", "Velocities", "Forces"],
+            input_items=input_items,
+            columns={
+                "File type": _file_type,
+                "Description": _description,
+                "Velocities": _velocities,
+                "Forces": _forces,
+            },
+        )
+        self.table_writer.get_lines_and_write_table()
 
 
 class SphinxClasses(TableWriter):
