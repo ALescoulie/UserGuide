@@ -54,13 +54,10 @@ class TableWriter:
             self.get_lines(*args, **kwargs)
         self.write_table()
 
-    def _run_method(self, method, *args, **kwargs):
-        sanitized = _sanitize_method_name(method)
-        meth = (
-            self.columns[method] if method in self.columns else getattr(self, sanitized)
-        )
+    def _run_method(self, method_name: str, *args, **kwargs):
+        meth = self.columns[method_name]
         val = meth(*args, **kwargs)
-        self.fields[method].append(val)
+        self.fields[method_name].append(val)
         return val
 
     def get_lines(self, *args, **kwargs):
