@@ -16,6 +16,15 @@ def _run_method(method: Callable, *args, **kwargs) -> str:
     return val
 
 
+def _generate_line(headings, columns, args) -> dict[str, str]:
+    line = {}
+    for heading in headings:
+        method = columns[heading]
+        val = _run_method(method, *args)
+        line[heading] = val
+    return line
+
+
 class TableWriter:
     """
     For writing tables with easy column switching.
@@ -33,7 +42,7 @@ class TableWriter:
         sort: bool = True,
         input_items: Iterable = set(),
         columns: dict = {},
-        generate_lines: Optional[Callable] = None,
+        custom_get_lines: Optional[Callable] = None,
     ):
         stem = os.getcwd().split("source")[0]
         self.path = os.path.join(stem, "source", filename)
@@ -44,38 +53,30 @@ class TableWriter:
         self.sort = sort
         self.input_items = input_items
         self.columns = columns
-        self.generate_lines = generate_lines
+        self.custom_get_lines = custom_get_lines
 
     def get_lines_and_write_table(self, *args, **kwargs):
         parent_directory = pathlib.Path(self.path).parent
         parent_directory.mkdir(exist_ok=True, parents=True)
-        if self.generate_lines:
-            self.lines = self.generate_lines(*args, **kwargs)
+        if self.custom_get_lines:
+            self.lines = self.custom_get_lines(*args, **kwargs)
         else:
-            self.get_lines(*args, **kwargs)
+            self.lines = self.get_lines()
         self.write_table()
 
-    def get_lines(self, *args, **kwargs):
+    def get_lines(self) -> list[list[str]]:
+        input_items = self.input_items
         lines = []
-        for items in self.input_items or self._set_up_input():
-            line = (
-                self.get_line(*items)
-                if isinstance(items, collections.Iterable)
-                else self.get_line(items)
-            )
-            lines.append(line)
+        for items in input_items:
+            if not isinstance(items, collections.Iterable):
+                items = [items]
+            line = _generate_line(self.headings, self.columns, items)
+            for heading, val in line.items():
+                self.fields[heading].append(val)
+            lines.append(list(line.values()))
         if self.sort:
             lines = sorted(lines)
-        self.lines = lines
-
-    def get_line(self, *args):
-        line = []
-        for heading in self.headings:
-            method = self.columns[heading]
-            val = _run_method(method, *args)
-            self.fields[heading].append(val)
-            line.append(val)
-        return line
+        return lines
 
     def write_table(self):
         with open(self.path, "w") as f:

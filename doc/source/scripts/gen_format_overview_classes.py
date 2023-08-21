@@ -139,7 +139,7 @@ class CoordinateReaders:
 
 class SphinxClasses:
     def __init__(self, fmt):
-        def _generate_lines():
+        def _custom_get_lines():
             lines = []
             for label, klass in sorted(FILE_TYPES[fmt].items()):
                 lines.append(
@@ -152,7 +152,7 @@ class SphinxClasses:
 
         self.table_writer = TableWriter(
             filename="formats/reference/classes/{}.txt".format(fmt),
-            generate_lines=_generate_lines,
+            custom_get_lines=_custom_get_lines,
         )
         self.table_writer.get_lines_and_write_table()
 

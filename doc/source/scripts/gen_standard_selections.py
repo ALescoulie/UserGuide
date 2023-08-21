@@ -19,7 +19,7 @@ def _chunk_list(lst: list, chunk_size: int = 8) -> list:
 
 
 # override get_lines as there are no headings
-def _generate_lines(
+def _custom_get_lines(
     *, klass: Type, attr: str, sort: bool = False, chunk_size: int = 8
 ) -> list[str]:
     selected = getattr(klass, attr)
@@ -36,7 +36,7 @@ class StandardSelectionTable:
         self.table_writer = TableWriter(
             sort=False,
             filename="generated/selections/{}.txt".format(filename),
-            generate_lines=_generate_lines,
+            custom_get_lines=_custom_get_lines,
         )
         self.table_writer.get_lines_and_write_table(*args, **kwargs)
 
