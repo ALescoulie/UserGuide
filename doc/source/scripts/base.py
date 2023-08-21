@@ -11,8 +11,9 @@ from typing import Callable, Iterable, Optional, Type
 import tabulate
 
 
-def _sanitize_method_name(name: str) -> str:
-    return "_" + name.replace(" ", "_").replace("/", "_").lower()
+def _run_method(method: Callable, *args, **kwargs) -> str:
+    val = method(*args, **kwargs)
+    return val
 
 
 class TableWriter:
@@ -54,12 +55,6 @@ class TableWriter:
             self.get_lines(*args, **kwargs)
         self.write_table()
 
-    def _run_method(self, method_name: str, *args, **kwargs):
-        meth = self.columns[method_name]
-        val = meth(*args, **kwargs)
-        self.fields[method_name].append(val)
-        return val
-
     def get_lines(self, *args, **kwargs):
         lines = []
         for items in self.input_items or self._set_up_input():
@@ -75,8 +70,11 @@ class TableWriter:
 
     def get_line(self, *args):
         line = []
-        for h in self.headings:
-            line.append(self._run_method(h, *args))
+        for heading in self.headings:
+            method = self.columns[heading]
+            val = _run_method(method, *args)
+            self.fields[heading].append(val)
+            line.append(val)
         return line
 
     def write_table(self):
