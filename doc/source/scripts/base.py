@@ -6,7 +6,7 @@ import pathlib
 import sys
 import textwrap
 from collections import defaultdict
-from typing import Callable, Optional, Type
+from typing import Callable, Iterable, Optional, Type
 
 import tabulate
 
@@ -26,17 +26,17 @@ class TableWriter:
 
     def __init__(
         self,
-        headings: list[str] = [],
+        headings: Iterable[str] = tuple(),
         filename: str = "",
-        include_table: bool = False,
+        include_table: Optional[str] = None,
         sort: bool = True,
-        input_items: set = {},
+        input_items: Iterable = set(),
         columns: dict = {},
         generate_lines: Optional[Callable] = None,
     ):
         stem = os.getcwd().split("source")[0]
         self.path = os.path.join(stem, "source", filename)
-        self.fields = defaultdict(list)
+        self.fields: dict[str, list[str]] = defaultdict(list)
         self.headings = headings
         self.filename = filename
         self.include_table = include_table
@@ -109,7 +109,7 @@ def sphinx_method(*, meth: Callable, tilde: bool = True) -> str:
     return ":meth:`{}{}.{}`".format(prefix, meth.__module__, meth.__qualname__)
 
 
-def sphinx_ref(*, txt: str, label: str = None, suffix: str = "") -> str:
+def sphinx_ref(*, txt: str, label: Optional[str] = None, suffix: str = "") -> str:
     return f":ref:`{txt} <{label}{suffix}>`"
 
 
