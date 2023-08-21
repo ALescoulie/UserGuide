@@ -15,7 +15,7 @@ def _sanitize_method_name(name: str) -> str:
     return "_" + name.replace(" ", "_").replace("/", "_").lower()
 
 
-class TableWriter(object):
+class TableWriter:
     """
     For writing tables with easy column switching.
 
@@ -23,13 +23,6 @@ class TableWriter(object):
 
     Filename relative to source.
     """
-
-    filename = ""
-    include_table = False
-    headings = []
-    preprocess = []
-    postprocess = []
-    sort = True
 
     def __init__(
         self,
@@ -42,7 +35,7 @@ class TableWriter(object):
         generate_lines: Optional[Callable] = None,
     ):
         stem = os.getcwd().split("source")[0]
-        self.path = os.path.join(stem, "source", self.filename)
+        self.path = os.path.join(stem, "source", filename)
         self.fields = defaultdict(list)
         self.headings = headings
         self.filename = filename
