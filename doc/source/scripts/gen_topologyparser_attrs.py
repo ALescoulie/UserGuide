@@ -123,8 +123,6 @@ class TopologyParsers:
         )
         self.table_writer.get_lines_and_write_table()
 
-        # raise ValueError(len(self.table_writer.lines), len(input_items), len(self.table_writer.fields["Format"]))
-
         attrs = defaultdict(set)
 
         def _get_attrs(line, format, parser, expected, guessed, key_label):

@@ -8,6 +8,7 @@ import textwrap
 from collections import defaultdict
 from typing import Callable, Iterable, Optional, Type
 
+import pandas as pd
 import tabulate
 
 
@@ -16,7 +17,9 @@ def _run_method(method: Callable, *args, **kwargs) -> str:
     return val
 
 
-def _generate_line(headings, columns, args) -> dict[str, str]:
+def _generate_line(
+    *, headings: Iterable[str], columns: dict[str, Callable], args: Iterable
+) -> dict[str, str]:
     line = {}
     for heading in headings:
         method = columns[heading]
@@ -67,13 +70,16 @@ class TableWriter:
     def get_lines(self) -> list[list[str]]:
         input_items = self.input_items
         lines = []
+        fields = []
         for items in input_items:
             if not isinstance(items, collections.Iterable):
                 items = [items]
-            line = _generate_line(self.headings, self.columns, items)
-            for heading, val in line.items():
-                self.fields[heading].append(val)
+            line = _generate_line(
+                headings=self.headings, columns=self.columns, args=items
+            )
+            fields.append(line)
             lines.append(list(line.values()))
+        self.fields = pd.DataFrame(fields)
         if self.sort:
             lines = sorted(lines)
         return lines
